@@ -2,7 +2,7 @@ import { DataTypes, FindOptions, Model, ModelStatic, Sequelize } from 'sequelize
 import Base from './base';
 
 export default class Account extends Base {
-  private model: ModelStatic<Model<any, any>>;
+  public model: ModelStatic<Model<any, any>>;
 
   constructor(s: Sequelize) {
     super();

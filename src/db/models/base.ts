@@ -35,7 +35,7 @@ export default abstract class Base {
     });
   }
 
-  belongsTo(
+  protected belongsTo(
     model1: ModelStatic<Model<any, any>>,
     model2: ModelStatic<Model<any, any>>,
     opts: BelongsToOptions | undefined
