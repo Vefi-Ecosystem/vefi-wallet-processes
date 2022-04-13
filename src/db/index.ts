@@ -9,4 +9,7 @@ export const models = modelsDef(sequelize);
   models.wallet.belongs(models.account.model, {
     as: 'account'
   });
+  models.push.belongs(models.account.model, {
+    as: 'account'
+  });
 })();
