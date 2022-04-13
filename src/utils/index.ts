@@ -1,6 +1,6 @@
 import sb from 'satoshi-bitcoin-ts';
 import { parseEther } from '@ethersproject/units';
-import request from 'node-fetch';
+import request, { RequestInit } from 'node-fetch';
 
 export const _bitcoinToSat = (bit: number | string): number => sb.toSatoshi(bit);
 export const _satToBitcoin = (sat: number | string): number => sb.toBitcoin(sat);
@@ -30,6 +30,18 @@ export const _rpcRequest = (url: string, params: JsonRpcRequestParams) => {
         if (!!res.error && !res.result) reject(new Error(res.error.message || res.error));
         else resolve(res.result);
       })
+      .catch(reject);
+  });
+};
+
+export const _apiRequest = (url: string, init: RequestInit, expects: 'json' | 'text') => {
+  return new Promise((resolve, reject) => {
+    request(url, init)
+      .then((res) => {
+        if (res.status >= 400) reject(new Error(`API responded with ${res.status}`));
+        return res[expects];
+      })
+      .then(resolve)
       .catch(reject);
   });
 };

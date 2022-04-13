@@ -1,8 +1,7 @@
 import express from 'express';
-import debug from 'debug';
+import logger from './logger';
 import { port as PORT } from './env';
 
-const logger = debug('index');
 const port: number = parseInt(PORT || '15500');
 const app: express.Express = express();
 

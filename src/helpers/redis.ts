@@ -1,9 +1,8 @@
 import debug from 'debug';
 import { createClient, RedisClientType } from 'redis';
+import logger from '../logger';
 
-const logger = debug('redis');
-
-export default class RedisConnector {
+class RedisConnector {
   clientInstance: RedisClientType<any, Record<string, any>>;
 
   constructor() {
@@ -67,3 +66,7 @@ export default class RedisConnector {
     });
   }
 }
+
+const redis = new RedisConnector();
+
+export default redis;
