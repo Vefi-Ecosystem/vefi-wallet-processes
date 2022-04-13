@@ -5,6 +5,8 @@ import request from 'node-fetch';
 export const _bitcoinToSat = (bit: number | string): number => sb.toSatoshi(bit);
 export const _satToBitcoin = (sat: number | string): number => sb.toBitcoin(sat);
 export const _toEther = (val: string) => parseEther(val).toString();
+export const _toWei = (val: number) => val * Math.pow(10, 18);
+export const _toDec = (val: number, pow: number) => val * Math.pow(10, pow);
 
 interface JsonRpcRequestParams {
   jsonrpc: '2.0';
