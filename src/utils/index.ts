@@ -34,7 +34,7 @@ export const _rpcRequest = (url: string, params: JsonRpcRequestParams) => {
   });
 };
 
-export const _apiRequest = (url: string, init: RequestInit, expects: 'json' | 'text') => {
+export const _apiRequest = (url: string, init: RequestInit, expects: 'json' | 'text'): Promise<any> => {
   return new Promise((resolve, reject) => {
     request(url, init)
       .then((res) => {
