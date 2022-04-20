@@ -43,6 +43,9 @@ export default class CronService {
               }
             }
           }
+          const _result = await redis.simpleSet(CONSTANTS.REDIS_COINLIST_KEY, JSON.stringify(coinsList));
+
+          logger('Redis response: %s', _result);
         } catch (error: any) {
           logger(error.message);
         }
@@ -52,15 +55,19 @@ export default class CronService {
 
   static _fetchCoinPrices() {
     cron
-      .schedule('*/30 * * * * *', async () => {
+      .schedule('*/2 * * * *', async () => {
         try {
-          const _exists = await redis.exists(CONSTANTS.REDIS_COINLIST_KEY);
+          const _coinlistKeyExists = await redis.exists(CONSTANTS.REDIS_COINLIST_KEY);
 
-          if (_exists) {
+          if (_coinlistKeyExists) {
             const _redisResult = await redis.simpleGet(CONSTANTS.REDIS_COINLIST_KEY);
             const _symbolList = JSON.parse(_redisResult as string).map((coin: any) => coin.symbol);
 
-            let record: any = new Map<string, { rate: number; percentageChange: number }>();
+            const record: Map<string, { rate: number; percentageChange: number }> = new Map<
+              string,
+              { rate: number; percentageChange: number }
+            >();
+
             let i = 1;
 
             for (const symbol of _symbolList) {
@@ -73,16 +80,24 @@ export default class CronService {
                   { method: 'GET', headers: { 'X-CoinAPI-Key': <string>coinAPIKey } },
                   'json'
                 );
-                record.set(symbol, { rate: priceResponse.rate, percentageChange: 0 });
+                const historicalPriceResponse = await _apiRequest(
+                  `${coinAPIRoot}/v1/exchangerate/${symbol.toUpperCase()}/USD/history?period_id=1HRS&time_end=${new Date(
+                    Date.now()
+                  ).toISOString()}&limit=1`,
+                  { method: 'GET', headers: { Accepts: 'application/json' } },
+                  'json'
+                );
+                const percentageChange =
+                  ((priceResponse.rate - historicalPriceResponse[0].rate_close) / priceResponse.rate) * 100;
+                record.set(symbol, { rate: priceResponse.rate, percentageChange });
                 i = i + 1;
               } catch (error: any) {
                 logger(error.message);
               }
             }
 
-            record = Object.fromEntries(record);
-
-            const _result = await redis.simpleSet(CONSTANTS.REDIS_PRICES_KEY, JSON.stringify(record));
+            const json = Object.fromEntries(record);
+            const _result = await redis.simpleSet(CONSTANTS.REDIS_PRICES_KEY, JSON.stringify(json));
 
             logger('Redis response: %s', _result);
           }
