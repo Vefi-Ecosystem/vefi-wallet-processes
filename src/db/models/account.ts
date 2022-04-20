@@ -31,4 +31,8 @@ export default class Account extends Base {
   findOne(opts: FindOptions<any> | undefined): Promise<Model<any, any> | null> {
     return super.find(this.model, opts);
   }
+
+  findByPk(pk: string): Promise<Model<any, any> | null> {
+    return super.findByKey(this.model, pk);
+  }
 }

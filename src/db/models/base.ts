@@ -30,6 +30,12 @@ export default abstract class Base {
     });
   }
 
+  findByKey(model: ModelStatic<Model<any, any>>, pk: string): Promise<Model<any, any> | null> {
+    return new Promise((resolve, reject) => {
+      model.findByPk(pk).then(resolve).catch(reject);
+    });
+  }
+
   findAll(model: ModelStatic<Model<any, any>>, opts?: FindOptions<any>): Promise<Model<any, any>[]> {
     return new Promise((resolve, reject) => {
       model.findAll().then(resolve).catch(reject);
