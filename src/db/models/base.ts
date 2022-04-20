@@ -5,7 +5,8 @@ import type {
   Model,
   ModelAttributes,
   ModelStatic,
-  Sequelize
+  Sequelize,
+  UpdateOptions
 } from 'sequelize';
 
 export default abstract class Base {
@@ -23,15 +24,24 @@ export default abstract class Base {
     });
   }
 
-  find(model: ModelStatic<Model<any, any>>, opts: FindOptions<any> | undefined): Promise<Model<any, any> | null> {
+  find(model: ModelStatic<Model<any, any>>, opts?: FindOptions<any>): Promise<Model<any, any> | null> {
     return new Promise((resolve, reject) => {
       model.findOne(opts).then(resolve).catch(reject);
     });
   }
 
-  findAll(model: ModelStatic<Model<any, any>>): Promise<Model<any, any>[]> {
+  findAll(model: ModelStatic<Model<any, any>>, opts?: FindOptions<any>): Promise<Model<any, any>[]> {
     return new Promise((resolve, reject) => {
       model.findAll().then(resolve).catch(reject);
+    });
+  }
+
+  update(model: ModelStatic<Model<any, any>>, val: any, opts: UpdateOptions<any>): Promise<number> {
+    return new Promise((resolve, reject) => {
+      model
+        .update(val, opts)
+        .then(([count]) => resolve(count))
+        .catch(reject);
     });
   }
 

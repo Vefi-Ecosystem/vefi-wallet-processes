@@ -85,6 +85,7 @@ export const _fetchCoinPrices = async () => {
           i = i + 1;
         } catch (error: any) {
           logger(error.message);
+          record.set(symbol, { rate: 0, percentageChange: 0 });
         }
       }
 
