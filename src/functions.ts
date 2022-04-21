@@ -98,3 +98,24 @@ export const _fetchCoinPrices = async () => {
     logger(error.message);
   }
 };
+
+export const _retrievePricesFromStore = async (cb: (key: string, item: { [x: string]: any }) => void) => {
+  try {
+    const record: Map<string, { rate: number; percentageChange: number }> = new Map<
+      string,
+      { rate: number; percentageChange: number }
+    >();
+    const _exists = await redis.exists(CONSTANTS.REDIS_PRICES_KEY);
+
+    if (_exists) {
+      const obj = await redis.simpleGet(CONSTANTS.REDIS_PRICES_KEY);
+      const parsedObj = JSON.parse(<string>obj);
+
+      for (const key of Object.keys(parsedObj)) record.set(key, parsedObj[key]);
+
+      cb('price', Object.fromEntries(record));
+    }
+  } catch (error: any) {
+    logger(error.message);
+  }
+};

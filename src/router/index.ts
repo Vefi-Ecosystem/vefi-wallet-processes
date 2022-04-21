@@ -12,3 +12,5 @@ router.use('/account', AccountRouter);
 router.use('/transaction', TransactionRouter);
 router.use('/push', PushSubscriptionRouter);
 router.use('/wallet', WalletRouter);
+
+export default router;
