@@ -10,6 +10,8 @@ class EthereumProcess {
   web3: Web3;
   latency: number;
   processed_block_key: string;
+  coin: string = 'ETH';
+
   constructor(latency: number = 10) {
     const provider = new Web3.providers.WebsocketProvider(<string>ETH_WS_URL, {
       clientConfig: {
@@ -74,42 +76,134 @@ class EthereumProcess {
               const contract = new this.web3.eth.Contract(<any>erc20Abi, log.address);
               const decimals = await contract.methods.decimals().call();
               const symbol = await contract.methods.symbol().call();
-              let walletFrom: any = await db.models.wallet.findOne({ where: { address: txReceipt.from } });
+              let walletFrom: any = await db.models.wallet.findOne({ where: { address: tx.from } });
 
               if (!!walletFrom) {
                 walletFrom = walletFrom.toJSON();
                 await db.models.tx.create({
-                  id: transaction_id,
-                  from: txReceipt.from,
-                  to: txReceipt.to,
+                  id: log.transactionHash,
+                  from: tx.from,
+                  to: tx.to,
                   timestamp,
                   coin: symbol,
                   status: 'FAILED',
                   amount: <any>log.data / 10 ** decimals,
-                  accountId: walletFrom.accountId
+                  accountId: walletFrom.accountId,
+                  block_id
                 });
               }
             }
           }
         } else {
-          let walletFrom: any = await db.models.wallet.findOne({ where: { address: txReceipt.from } });
-          if (!!walletFrom) {
-            walletFrom = walletFrom.toJSON();
-            await db.models.tx.create({
-              id: transaction_id,
-              from: tx.from,
-              to: tx.to,
-              timestamp,
-              coin: 'ETH',
-              status: 'FAILED',
-              amount: this.web3.utils.fromWei(tx.value),
-              accountId: walletFrom.accountId
-            });
+          if (!!tx) {
+            let walletFrom: any = await db.models.wallet.findOne({ where: { address: tx.from } });
+            if (!!walletFrom) {
+              walletFrom = walletFrom.toJSON();
+              await db.models.tx.create({
+                id: transaction_id,
+                from: tx.from,
+                to: tx.to,
+                timestamp,
+                coin: this.coin,
+                status: 'FAILED',
+                amount: this.web3.utils.fromWei(tx.value),
+                accountId: walletFrom.accountId,
+                block_id
+              });
+            }
           }
         }
         return;
       } else if (!!txReceipt.status) {
+        if (txReceipt.logs.length > 0) {
+          for (const log of txReceipt.logs) {
+            setTimeout(() => {
+              logger('Processing log: %s', log.address);
+            }, this.latency * 1000);
+            const callValue = await this.web3.eth.call({
+              to: log.address,
+              data: <string>this.web3.utils.sha3('decimals()')
+            });
+            const isERC20 = callValue !== '0x' && callValue !== '0x0';
+            if (isERC20 && log.topics[1] !== undefined && log.topics[2] !== undefined) {
+              logger('Start processing contract: %s', log.address);
+              const contract = new this.web3.eth.Contract(<any>erc20Abi, log.address);
+              const decimals = await contract.methods.decimals().call();
+              const symbol = await contract.methods.symbol().call();
+              let walletFrom: any = await db.models.wallet.findOne({ where: { address: tx.from } });
+
+              if (!!walletFrom) {
+                walletFrom = walletFrom.toJSON();
+                await db.models.tx.create({
+                  id: log.transactionHash,
+                  from: tx.from,
+                  to: tx.to,
+                  timestamp,
+                  coin: symbol,
+                  status: 'CONFIRMED',
+                  amount: <any>log.data / 10 ** decimals,
+                  accountId: walletFrom.accountId,
+                  block_id
+                });
+              }
+
+              let walletTo: any = await db.models.wallet.findOne({ where: { address: tx.to } });
+
+              if (!!walletTo) {
+                walletTo = walletTo.toJSON();
+                await db.models.tx.create({
+                  id: log.transactionHash,
+                  from: tx.from,
+                  to: tx.to,
+                  timestamp,
+                  coin: symbol,
+                  status: 'CONFIRMED',
+                  amount: <any>log.data / 10 ** decimals,
+                  accountId: walletTo.accountId,
+                  block_id
+                });
+              }
+            }
+          }
+        } else {
+          if (!!tx) {
+            let walletFrom: any = await db.models.wallet.findOne({ where: { address: tx.from } });
+            if (!!walletFrom) {
+              walletFrom = walletFrom.toJSON();
+              await db.models.tx.create({
+                id: transaction_id,
+                from: tx.from,
+                to: tx.to,
+                timestamp,
+                coin: this.coin,
+                status: 'CONFIRMED',
+                amount: this.web3.utils.fromWei(tx.value),
+                accountId: walletFrom.accountId,
+                block_id
+              });
+            }
+
+            let walletTo: any = await db.models.wallet.findOne({ where: { address: tx.to } });
+            if (!!walletTo) {
+              walletTo = walletTo.toJSON();
+              await db.models.tx.create({
+                id: transaction_id,
+                from: tx.from,
+                to: tx.to,
+                timestamp,
+                coin: this.coin,
+                status: 'CONFIRMED',
+                amount: this.web3.utils.fromWei(tx.value),
+                accountId: walletTo.accountId,
+                block_id
+              });
+            }
+          }
+        }
       }
-    } catch (error: any) {}
+      logger('TX: %s', JSON.stringify(tx, undefined, 2));
+    } catch (error: any) {
+      logger(error.message);
+    }
   }
 }

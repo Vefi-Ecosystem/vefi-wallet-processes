@@ -53,6 +53,10 @@ export default class Transaction extends Base {
         validate: {
           notEmpty: true
         }
+      },
+      block_id: {
+        type: DataTypes.NUMBER,
+        allowNull: false
       }
     });
   }
