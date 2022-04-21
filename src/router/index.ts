@@ -6,7 +6,7 @@ import WalletRouter from './wallet';
 
 const router = Router();
 
-router.get('/health', (req, res) => res.status(200).json({ message: 'healthy' }));
+router.get('/health', (req, res) => res.status(200).json({ message: 'HEALTHY' }));
 
 router.use('/account', AccountRouter);
 router.use('/transaction', TransactionRouter);
