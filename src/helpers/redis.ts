@@ -1,4 +1,3 @@
-import debug from 'debug';
 import { createClient, RedisClientType } from 'redis';
 import logger from '../logger';
 
@@ -12,6 +11,7 @@ class RedisConnector {
   async _connect() {
     this.clientInstance.on('error', logger);
     await this.clientInstance.connect();
+    logger('Connection to Redis initialized');
   }
 
   setJsonVal(key: string, field: string, val: object, expiresIn: number = 0): Promise<number> {

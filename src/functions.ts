@@ -76,7 +76,7 @@ export const _fetchCoinPrices = async () => {
             `${coinAPIRoot}/v1/exchangerate/${symbol.toUpperCase()}/USD/history?period_id=1HRS&time_end=${new Date(
               Date.now()
             ).toISOString()}&limit=1`,
-            { method: 'GET', headers: { Accepts: 'application/json' } },
+            { method: 'GET', headers: { 'X-CoinAPI-Key': <string>coinAPIKey } },
             'json'
           );
           const percentageChange =

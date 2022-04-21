@@ -39,7 +39,7 @@ export const _apiRequest = (url: string, init: RequestInit, expects: 'json' | 't
     request(url, init)
       .then((res) => {
         if (res.status >= 400) reject(new Error(`API responded with ${res.status}`));
-        return res[expects];
+        return res[expects]();
       })
       .then(resolve)
       .catch(reject);

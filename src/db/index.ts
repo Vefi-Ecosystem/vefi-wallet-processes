@@ -1,17 +1,17 @@
 import { Sequelize } from 'sequelize';
 import modelsDef from './models';
-import { dbHost, dbPort, dbPass } from '../env';
-import logger from '../logger';
+import { dbHost, dbPort, dbPass, dbName, dbUser } from '../env';
 
 export const sequelize = new Sequelize({
   host: dbHost,
   port: parseInt(dbPort || '5432'),
+  username: dbUser,
   password: dbPass,
+  database: dbName,
   dialect: 'postgres',
   sync: {
     force: false
-  },
-  logging: logger
+  }
 });
 
 export const models = modelsDef(sequelize);

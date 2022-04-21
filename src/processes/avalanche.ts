@@ -61,7 +61,7 @@ class AvalancheProcess {
 
       if (txReceipt !== null && typeof txReceipt.status !== 'undefined' && !txReceipt.status) {
         logger('Tx receipt status failed');
-        if (txReceipt.logs.length > 0) {
+        if (!!txReceipt.logs && txReceipt.logs.length > 0) {
           for (const log of txReceipt.logs) {
             setTimeout(() => {
               logger('Processing log: %s', log.address);
@@ -115,7 +115,7 @@ class AvalancheProcess {
         }
         return;
       } else if (!!txReceipt.status) {
-        if (txReceipt.logs.length > 0) {
+        if (!!txReceipt.logs && txReceipt.logs.length > 0) {
           for (const log of txReceipt.logs) {
             setTimeout(() => {
               logger('Processing log: %s', log.address);

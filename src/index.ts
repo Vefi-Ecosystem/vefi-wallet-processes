@@ -31,9 +31,9 @@ server.listen(port, () => {
   logger('Server running on port %d', port);
   (() => {
     sequelize.sync().then(() => {
+      _initAllProcesses();
       _fetchAssetList().then(() => {
         _fetchCoinPrices().then(() => {
-          _initAllProcesses();
           logger('Sync and init all processes');
         });
       });

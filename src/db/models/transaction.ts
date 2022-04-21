@@ -30,7 +30,7 @@ export default class Transaction extends Base {
         }
       },
       timestamp: {
-        type: DataTypes.NUMBER,
+        type: DataTypes.INTEGER,
         allowNull: false
       },
       coin: {
@@ -55,7 +55,7 @@ export default class Transaction extends Base {
         }
       },
       block_id: {
-        type: DataTypes.NUMBER,
+        type: DataTypes.INTEGER,
         allowNull: false
       }
     });
