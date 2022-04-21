@@ -1,4 +1,14 @@
-import { BelongsTo, BelongsToOptions, DataTypes, FindOptions, Model, ModelStatic, Sequelize } from 'sequelize';
+import {
+  BelongsTo,
+  BelongsToOptions,
+  DataTypes,
+  DestroyOptions,
+  FindOptions,
+  Model,
+  ModelStatic,
+  Sequelize,
+  UpdateOptions
+} from 'sequelize';
 import Base from './base';
 
 export default class PushSubscription extends Base {
@@ -34,6 +44,14 @@ export default class PushSubscription extends Base {
 
   findOne(opts: FindOptions<any> | undefined): Promise<Model<any, any> | null> {
     return super.find(this.model, opts);
+  }
+
+  update(val: any, opts: UpdateOptions<any>): Promise<number> {
+    return super.update(this.model, val, opts);
+  }
+
+  remove(opts?: DestroyOptions): Promise<number> {
+    return super.delete(this.model, opts);
   }
 
   belongs(

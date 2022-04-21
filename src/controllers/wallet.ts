@@ -12,7 +12,10 @@ export default class WalletController {
       });
 
       if (!walletFound) {
-        walletFound = await db.models.wallet.create({ accountId: req.body.accountId, address: req.body.address });
+        walletFound = await db.models.wallet.create({
+          accountId: req.body.accountId,
+          address: req.body.address
+        });
         const result = walletFound.toJSON();
         return res.status(201).json({ result });
       }

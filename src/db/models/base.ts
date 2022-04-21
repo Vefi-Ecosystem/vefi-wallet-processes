@@ -1,6 +1,7 @@
 import type {
   BelongsTo,
   BelongsToOptions,
+  DestroyOptions,
   FindOptions,
   Model,
   ModelAttributes,
@@ -48,6 +49,12 @@ export default abstract class Base {
         .update(val, opts)
         .then(([count]) => resolve(count))
         .catch(reject);
+    });
+  }
+
+  delete(model: ModelStatic<Model<any, any>>, opts?: DestroyOptions<any>): Promise<number> {
+    return new Promise((resolve, reject) => {
+      model.destroy(opts).then(resolve).catch(reject);
     });
   }
 
