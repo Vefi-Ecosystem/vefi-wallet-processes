@@ -1,19 +1,19 @@
 import Web3 from 'web3';
 import * as db from '../db';
-import { ETH_WS_URL } from '../env';
+import { AVAX_WS_URL } from '../env';
 import redis from '../helpers/redis';
 import * as CONSTANTS from '../constants';
 import logger from '../logger';
 import erc20Abi from '../assets/ERC20ABI.json';
 
-class EthereumProcess {
+class AvalancheProcess {
   web3: Web3;
   latency: number;
   processed_block_key: string;
-  coin: string = 'ETH';
+  coin: string = 'AVAX';
 
   constructor(latency: number = 10) {
-    const provider = new Web3.providers.WebsocketProvider(<string>ETH_WS_URL, {
+    const provider = new Web3.providers.WebsocketProvider(<string>AVAX_WS_URL, {
       clientConfig: {
         maxReceivedFrameSize: 100000000,
         maxReceivedMessageSize: 100000000,
@@ -29,7 +29,7 @@ class EthereumProcess {
     });
     this.web3 = new Web3(provider);
     this.latency = latency;
-    this.processed_block_key = CONSTANTS.REDIS_PROCESSED_BLOCK_KEY.concat(':ethereum');
+    this.processed_block_key = CONSTANTS.REDIS_PROCESSED_BLOCK_KEY.concat(':avalanche');
   }
 
   async lastProcessBlock(block: number) {
@@ -253,6 +253,6 @@ class EthereumProcess {
   }
 }
 
-const ethProcess = new EthereumProcess(30);
+const avaxProcess = new AvalancheProcess(30);
 
-export default ethProcess;
+export default avaxProcess;

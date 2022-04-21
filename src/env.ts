@@ -11,3 +11,5 @@ export const coinAPIKey = process.env.COIN_API_KEY;
 export const assetsUrl = process.env.ASSETS_URL;
 
 export const ETH_WS_URL = process.env.ETH_WS_URL;
+export const BSC_WS_URL = process.env.BSC_WS_URL;
+export const AVAX_WS_URL = process.env.AVAX_WS_URL;
