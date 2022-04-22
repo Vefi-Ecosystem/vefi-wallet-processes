@@ -5,6 +5,7 @@ import redis from '../helpers/redis';
 import * as CONSTANTS from '../constants';
 import logger from '../logger';
 import erc20Abi from '../assets/ERC20ABI.json';
+import { Op } from 'sequelize';
 
 class EthereumProcess {
   web3: Web3;
@@ -55,153 +56,114 @@ class EthereumProcess {
   }
 
   async getTransactionDetail(transaction_id: string, block_id: number, timestamp: number) {
+    const txReceipt = await this.web3.eth.getTransactionReceipt(transaction_id);
+
+    if (txReceipt !== null && typeof txReceipt.status !== 'undefined' && !txReceipt.status) {
+      logger('Tx receipt status failed');
+      return;
+    }
+
     try {
-      const tx = await this.web3.eth.getTransaction(transaction_id);
-      const txReceipt = await this.web3.eth.getTransactionReceipt(transaction_id);
+      const tx = await this.web3.eth.getTransaction(transaction_id.toString());
+      let transactionDetail = {};
 
-      if (txReceipt !== null && typeof txReceipt.status !== 'undefined' && !txReceipt.status) {
-        logger('Tx receipt status failed');
-        if (!!txReceipt.logs && txReceipt.logs.length > 0) {
-          for (const log of txReceipt.logs) {
-            setTimeout(() => {
-              logger('Processing log: %s', log.address);
-            }, this.latency * 1000);
-            const callValue = await this.web3.eth.call({
-              to: log.address,
-              data: <string>this.web3.utils.sha3('decimals()')
-            });
-            const isERC20 = callValue !== '0x' && callValue !== '0x0';
-            if (isERC20 && log.topics[1] !== undefined && log.topics[2] !== undefined) {
-              logger('Start processing contract: %s', log.address);
-              const contract = new this.web3.eth.Contract(<any>erc20Abi, log.address);
-              const decimals = await contract.methods.decimals().call();
-              const symbol = await contract.methods.symbol().call();
-              let walletFrom: any = await db.models.wallet.findOne({ where: { address: tx.from } });
+      if (!!txReceipt.status && txReceipt.logs.length > 0) {
+        for (const log of txReceipt.logs) {
+          setTimeout(() => {
+            console.log('Now processing log: %s', log.address);
+          }, this.latency * 1000);
+          const callValue = await this.web3.eth.call({
+            to: log.address,
+            data: <string>this.web3.utils.sha3('decimals()')
+          });
+          const isERC20 = callValue !== '0x' && callValue !== '0x0';
+          if (isERC20 && log.topics[1] !== undefined && log.topics[2] !== undefined) {
+            console.log('Start processing contract: %s', log.address);
+            const contract = new this.web3.eth.Contract(<any>erc20Abi, log.address);
+            const decimals = await contract.methods.decimals().call();
+            const symbol = await contract.methods.symbol().call();
+            transactionDetail = {
+              ...transactionDetail,
+              tx_id: log.transactionHash,
+              from: tx.from,
+              to: tx.to,
+              block_id: log.blockNumber,
+              amount: <any>log.data / 10 ** decimals,
+              coin: symbol,
+              timestamp,
+              status: 'CONFIRMED'
+            };
+            let walletTo: any = await db.models.wallet.findOne({ where: { address: { [Op.like]: <string>tx.to } } });
 
-              if (!!walletFrom) {
-                walletFrom = walletFrom.toJSON();
-                await db.models.tx.create({
-                  id: log.transactionHash,
-                  from: tx.from,
-                  to: tx.to,
-                  timestamp,
-                  coin: symbol,
-                  status: 'FAILED',
-                  amount: <any>log.data / 10 ** decimals,
-                  accountId: walletFrom.accountId,
-                  block_id
-                });
-              }
+            if (!!walletTo) {
+              walletTo = walletTo.toJSON();
+              // Push transaction detail to Redis store
+              const _val = await redis.setJsonVal(
+                `${CONSTANTS.REDIS_TX_STORE_KEY}:${walletTo.accountId}`,
+                log.transactionHash,
+                transactionDetail
+              );
+              logger('Redis response: %d', _val);
             }
-          }
-        } else {
-          if (!!tx) {
-            let walletFrom: any = await db.models.wallet.findOne({ where: { address: tx.from } });
+
+            let walletFrom: any = await db.models.wallet.findOne({
+              where: { address: { [Op.like]: <string>tx.from } }
+            });
+
             if (!!walletFrom) {
               walletFrom = walletFrom.toJSON();
-              await db.models.tx.create({
-                id: transaction_id,
-                from: tx.from,
-                to: tx.to,
-                timestamp,
-                coin: this.coin,
-                status: 'FAILED',
-                amount: this.web3.utils.fromWei(tx.value),
-                accountId: walletFrom.accountId,
-                block_id
-              });
+              // Push transaction detail to Redis store
+              const _val = await redis.setJsonVal(
+                `${CONSTANTS.REDIS_TX_STORE_KEY}:${walletFrom.accountId}`,
+                log.transactionHash,
+                transactionDetail
+              );
+              logger('Redis response: %d', _val);
             }
           }
         }
-        return;
-      } else if (!!txReceipt.status) {
-        if (!!txReceipt.logs && txReceipt.logs.length > 0) {
-          for (const log of txReceipt.logs) {
-            setTimeout(() => {
-              logger('Processing log: %s', log.address);
-            }, this.latency * 1000);
-            const callValue = await this.web3.eth.call({
-              to: log.address,
-              data: <string>this.web3.utils.sha3('decimals()')
-            });
-            const isERC20 = callValue !== '0x' && callValue !== '0x0';
-            if (isERC20 && log.topics[1] !== undefined && log.topics[2] !== undefined) {
-              logger('Start processing contract: %s', log.address);
-              const contract = new this.web3.eth.Contract(<any>erc20Abi, log.address);
-              const decimals = await contract.methods.decimals().call();
-              const symbol = await contract.methods.symbol().call();
-              let walletFrom: any = await db.models.wallet.findOne({ where: { address: tx.from } });
+      } else {
+        if (tx) {
+          transactionDetail = {
+            ...transactionDetail,
+            tx_id: tx.hash,
+            from: tx.from,
+            to: tx.to,
+            block_id,
+            amount: this.web3.utils.fromWei(tx.value),
+            coin: this.coin,
+            timestamp,
+            status: 'CONFIRMED'
+          };
 
-              if (!!walletFrom) {
-                walletFrom = walletFrom.toJSON();
-                await db.models.tx.create({
-                  id: log.transactionHash,
-                  from: tx.from,
-                  to: tx.to,
-                  timestamp,
-                  coin: symbol,
-                  status: 'CONFIRMED',
-                  amount: <any>log.data / 10 ** decimals,
-                  accountId: walletFrom.accountId,
-                  block_id
-                });
-              }
+          let walletTo: any = await db.models.wallet.findOne({ where: { address: { [Op.like]: <string>tx.to } } });
 
-              let walletTo: any = await db.models.wallet.findOne({ where: { address: tx.to } });
-
-              if (!!walletTo) {
-                walletTo = walletTo.toJSON();
-                await db.models.tx.create({
-                  id: log.transactionHash,
-                  from: tx.from,
-                  to: tx.to,
-                  timestamp,
-                  coin: symbol,
-                  status: 'CONFIRMED',
-                  amount: <any>log.data / 10 ** decimals,
-                  accountId: walletTo.accountId,
-                  block_id
-                });
-              }
-            }
+          if (!!walletTo) {
+            walletTo = walletTo.toJSON();
+            // Push transaction detail to Redis store
+            const _val = await redis.setJsonVal(
+              `${CONSTANTS.REDIS_TX_STORE_KEY}:${walletTo.accountId}`,
+              tx.hash,
+              transactionDetail
+            );
+            logger('Redis response: %d', _val);
           }
-        } else {
-          if (!!tx) {
-            let walletFrom: any = await db.models.wallet.findOne({ where: { address: tx.from } });
-            if (!!walletFrom) {
-              walletFrom = walletFrom.toJSON();
-              await db.models.tx.create({
-                id: transaction_id,
-                from: tx.from,
-                to: tx.to,
-                timestamp,
-                coin: this.coin,
-                status: 'CONFIRMED',
-                amount: this.web3.utils.fromWei(tx.value),
-                accountId: walletFrom.accountId,
-                block_id
-              });
-            }
 
-            let walletTo: any = await db.models.wallet.findOne({ where: { address: tx.to } });
-            if (!!walletTo) {
-              walletTo = walletTo.toJSON();
-              await db.models.tx.create({
-                id: transaction_id,
-                from: tx.from,
-                to: tx.to,
-                timestamp,
-                coin: this.coin,
-                status: 'CONFIRMED',
-                amount: this.web3.utils.fromWei(tx.value),
-                accountId: walletTo.accountId,
-                block_id
-              });
-            }
+          let walletFrom: any = await db.models.wallet.findOne({ where: { address: { [Op.like]: <string>tx.from } } });
+
+          if (!!walletFrom) {
+            walletFrom = walletFrom.toJSON();
+            // Push transaction detail to Redis store
+            const _val = await redis.setJsonVal(
+              `${CONSTANTS.REDIS_TX_STORE_KEY}:${walletFrom.accountId}`,
+              tx.hash,
+              transactionDetail
+            );
+            logger('Redis response: %d', _val);
           }
         }
       }
-      logger('TX: %s', JSON.stringify(tx, undefined, 2));
+      logger('Transaction detail: %s', JSON.stringify(transactionDetail, undefined, 2));
     } catch (error: any) {
       logger(error.message);
     }
@@ -253,6 +215,6 @@ class EthereumProcess {
   }
 }
 
-const ethProcess = new EthereumProcess(30);
+const ethProcess = new EthereumProcess(5);
 
 export default ethProcess;

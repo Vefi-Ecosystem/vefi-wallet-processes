@@ -23,7 +23,4 @@ export const models = modelsDef(sequelize);
   models.push.belongs(models.account.model, {
     as: 'account'
   });
-  models.tx.belongs(models.account.model, {
-    as: 'account'
-  });
 })();
