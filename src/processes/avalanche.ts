@@ -64,13 +64,13 @@ class AvalancheProcess {
     }
 
     try {
-      const tx = await this.web3.eth.getTransaction(transaction_id.toString());
+      const tx = await this.web3.eth.getTransaction(transaction_id);
       let transactionDetail = {};
 
       if (!!txReceipt.status && txReceipt.logs.length > 0) {
         for (const log of txReceipt.logs) {
           setTimeout(() => {
-            console.log('Now processing log: %s', log.address);
+            logger('Now processing log: %s', log.address);
           }, this.latency * 1000);
           const callValue = await this.web3.eth.call({
             to: log.address,
