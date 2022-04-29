@@ -15,4 +15,5 @@ export const assetsUrl = process.env.ASSETS_URL;
 export const ETH_WS_URL = process.env.ETH_WS_URL;
 export const BSC_WS_URL = process.env.BSC_WS_URL;
 export const AVAX_WS_URL = process.env.AVAX_WS_URL;
+export const BITGERT_WS_URL = process.env.BITGERT_WS_URL;
 export const SOLANA_CLUSTER = process.env.SOLANA_CLUSTER;
