@@ -30,7 +30,7 @@ class BitGertProcess {
     });
     this.web3 = new Web3(provider);
     this.latency = latency;
-    this.processed_block_key = CONSTANTS.REDIS_PROCESSED_BLOCK_KEY.concat(':smartchain');
+    this.processed_block_key = CONSTANTS.REDIS_PROCESSED_BLOCK_KEY.concat(':brisechain');
   }
 
   async lastProcessBlock(block: number) {
